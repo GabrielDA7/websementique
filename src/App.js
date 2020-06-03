@@ -12,7 +12,7 @@ const MyNodeComponent = ({node}) => {
 function App() {
     const [error, setError] = useState(null);
     const [input, setInput] = useState('');
-    const [personList, setPersonList] = useState({});
+    const [personList, setPersonList] = useState([]);
 
     const [step, setStep] = useState({choose : false, displayChart: false});
 
@@ -55,7 +55,7 @@ function App() {
             .then(json => json.results.bindings.map(res => {
                     return {
                         id: extractIdFromWikidataUrl(res.child.value),
-                        image: res.image.value,
+                        image: res.image?.value,
                         gender: extractIdFromWikidataUrl(res.gender.value),
                         name: res.childLabel.value
                     };
@@ -106,7 +106,7 @@ function App() {
     const handleSubmit = async (event) => {
         event.preventDefault();
         let personList = await getPersonFromWikidata(input);
-        console.log(JSON.stringify(personList));
+        setPersonList(personList);
         console.log(getTree(personList[0]));
     };
 
@@ -124,7 +124,7 @@ function App() {
                 <input type="text" value={input} onChange={(e) => setInput(e.target.value)}/>
                 <button type="submit">Search</button>
             </form>
-            {step.choose ? <PersonList onClick={handleChoosePerson} data={personList} /> : null}
+            {personList ? <PersonList onClick={handleChoosePerson} data={personList} /> : null}
             {step.displayChart ? <OrgChart tree={data} NodeComponent={MyNodeComponent} /> : null}
         </main>
     </div>
@@ -135,9 +135,12 @@ function PersonList(props) {
     const {data, onClick} = props;
 
     return (
-        data.each(person => {
+        data.map(person => {
             return (
-                <a href="#" onClick={() => onClick(person)}>
+                <a href="#" onClick={(e) => {
+                    e.preventDefault();
+                    onClick(person)}
+                }>
                   <div className="person-card">
                       <div className="row">
                           <img src={person.image}/>
