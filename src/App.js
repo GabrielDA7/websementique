@@ -13,6 +13,35 @@ function App() {
     const [error, setError] = useState(null);
     const [input, setInput] = useState('');
 
+    const getPersonFromWikidata = (personName) => {
+        const queryPerson = "SELECT ?item ?itemLabel ?image ?gender " +
+            "WHERE {" +
+            "  ?item wdt:P31 wd:Q5." +
+            "  ?item ?label \"" + personName + "\"." +
+            "  ?item wdt:P18 ?image." +
+            "  ?item wdt:P21 ?gender." +
+            "  SERVICE wikibase:label { bd:serviceParam wikibase:language \"fr,en\". }" +
+            "}";
+
+        let personList = [];
+        fetch("https://query.wikidata.org/bigdata/namespace/wdq/sparql?format=json&query=" + queryPerson)
+            .then(res => res.json())
+            .then(json => personList.push(json.results.bindings.map(res => {
+                    return {
+                        id: extractIdFromWikidataUrl(res.item.value),
+                        image: res.image.value,
+                        gender: extractIdFromWikidataUrl(res.gender.value),
+                        name: res.itemLabel.value
+                    };
+                }))
+            );
+        return personList;
+    };
+
+    const extractIdFromWikidataUrl = (url) => {
+        return url.replace("http://www.wikidata.org/entity/", "");
+    };
+
     const data = {
         name: "Bill Lumbergh",
         actor: "Gary Cole",
@@ -41,8 +70,9 @@ function App() {
 
     const handleSubmit = (event) => {
         event.preventDefault();
+        let personList = getPersonFromWikidata(input);
 
-    }
+    };
 
   return (
     <div className="App">
