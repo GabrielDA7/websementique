@@ -2,6 +2,7 @@ import React, {useState} from 'react';
 import OrgChart from 'react-orgchart';
 import 'react-orgchart/index.css';
 import './App.css';
+import {Button, Card, Col, Container, Form, FormControl, Navbar, Row} from "react-bootstrap";
 
 const MyNodeComponent = ({node}) => {
     return (
@@ -10,11 +11,10 @@ const MyNodeComponent = ({node}) => {
 };
 
 function App() {
-    const [error, setError] = useState(null);
     const [input, setInput] = useState('');
     const [personList, setPersonList] = useState([]);
+    const [personChoice, setPersonChoice] = useState({});
 
-    const [step, setStep] = useState({choose : false, displayChart: false});
 
     const getPersonFromWikidata = (personName) => {
         const queryPerson = "SELECT ?item ?itemLabel ?image ?gender " +
@@ -107,26 +107,44 @@ function App() {
         event.preventDefault();
         let personList = await getPersonFromWikidata(input);
         setPersonList(personList);
-        console.log(getTree(personList[0]));
     };
 
     const handleChoosePerson = (person) => {
         console.log(JSON.stringify(person));
+        setPersonChoice(person);
+        //console.log(getTree(personList[0]));
     };
+
+    const shouldDisplayGraph = () => {
+        return Object.entries(personChoice).length > 0;
+    }
+
+    const shouldDisplayChoice = () => {
+        return Object.entries(personChoice).length == 0 && Object.entries(personList).length;
+    }
 
   return (
     <div className="App">
-      <header className="App-header">
-        Généalogie
-      </header>
-        <main>
-            <form onSubmit={handleSubmit}>
-                <input type="text" value={input} onChange={(e) => setInput(e.target.value)}/>
-                <button type="submit">Search</button>
-            </form>
-            {personList ? <PersonList onClick={handleChoosePerson} data={personList} /> : null}
-            {step.displayChart ? <OrgChart tree={data} NodeComponent={MyNodeComponent} /> : null}
-        </main>
+        <Navbar style={{backgroundColor: "#3f3f44"}} expand="lg">
+            <Navbar.Brand style={{color: "#ffffff"}}>Généalogie</Navbar.Brand>
+        </Navbar>
+        <div style={{
+            backgroundColor: "#cceabb",
+            padding: "35px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+        }}>
+            <h2>Find celebrity descendants</h2>
+            <Form className="mt-2" inline onSubmit={handleSubmit}>
+                <FormControl type="text" value={input} placeholder="Search" onChange={(e) => setInput(e.target.value)} className="mr-sm-2" />
+                <Button variant="dark">Search</Button>
+            </Form>
+        </div>
+        <Container>
+            {shouldDisplayChoice() ? <PersonList onClick={handleChoosePerson} data={personList} /> : null}
+            {shouldDisplayGraph() ? <OrgChart tree={data} NodeComponent={MyNodeComponent} /> : null}
+        </Container>
     </div>
   );
 }
@@ -135,23 +153,23 @@ function PersonList(props) {
     const {data, onClick} = props;
 
     return (
-        data.map(person => {
-            return (
-                <a href="#" onClick={(e) => {
-                    e.preventDefault();
-                    onClick(person)}
-                }>
-                  <div className="person-card">
-                      <div className="row">
-                          <img src={person.image}/>
-                      </div>
-                      <div className="row">
-                          {person.name}
-                      </div>
-                  </div>
-                </a>
-            );
-        })
+        <Row className="pt-2">
+        {data.map((person, index) =>
+            <Col xs lg="4" key={index}>
+                <Card style={{ width: '18rem' }}>
+                    <Card.Img style={{height: "300px"}} variant="top" src={person.image} />
+                    <Card.Body>
+                        <Card.Title>{person.name}</Card.Title>
+                        <Card.Text>
+                            Some quick example text to build on the card title and make up the bulk of
+                            the card's content.
+                        </Card.Text>
+                        <Button variant="dark" onClick={() => onClick(person)}>Select</Button>
+                    </Card.Body>
+                </Card>
+            </Col>
+        )}
+        </Row>
     )
 }
 
