@@ -49,14 +49,16 @@ function App() {
             "                gas:traversalDirection \"Forward\" ;" +
             "                gas:out ?item ;" +
             "                gas:out1 ?depth ;" +
-            "                gas:maxIterations 2;" +
+            "                gas:maxIterations 10;" +
             "                gas:linkType wdt:P40 ." +
             "  }" +
             "  OPTIONAL { ?item wdt:P40 ?child }" +
             "  OPTIONAL { ?item wdt:P18 ?image }" +
             "  OPTIONAL { ?item wdt:P21 ?gender }" +
-            "  OPTIONAL { ?item wdt:P20 ?deathLocation }" +
-            "  OPTIONAL { ?deathLocation wdt:P625 ?deathLocationCoordinates }" +
+            "  OPTIONAL { " +
+            "    ?item wdt:P20 ?deathLocation." +
+            "    ?deathLocation wdt:P625 ?deathLocationCoordinates" +
+            "  }" +
             "  SERVICE wikibase:label {bd:serviceParam wikibase:language \"fr,en\" }" +
             "}" +
             "ORDER BY ?depth";
