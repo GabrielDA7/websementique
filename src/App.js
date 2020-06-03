@@ -137,32 +137,51 @@ function App() {
     };
 
   return (
-    <div className="App">
-        <Navbar style={{backgroundColor: "#3f3f44"}} expand="lg">
-            <Navbar.Brand style={{color: "#ffffff"}}>Généalogie</Navbar.Brand>
-        </Navbar>
+    <div className="App" style={{
+        position: "absolute",
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0,
+        display: "flex",
+        flexDirection: "column"
+    }}>
         <div style={{
-            backgroundColor: "#cceabb",
-            padding: "35px",
+            flexGrow: 1,
             display: "flex",
             flexDirection: "column",
-            alignItems: "center",
+            minHeight: 0
         }}>
-            <h2>Find celebrity descendants</h2>
-            <Form className="mt-2" inline onSubmit={handleSubmit}>
-                <FormControl type="text" value={input} placeholder="Search" onChange={(e) => setInput(e.target.value)} className="mr-sm-2" />
-                <Button type="submit" variant="dark">Search</Button>
-            </Form>
+            <Navbar style={{backgroundColor: "#3f3f44"}} expand="lg">
+                <Navbar.Brand style={{color: "#ffffff"}}>Généalogie</Navbar.Brand>
+            </Navbar>
+            <div style={{
+                backgroundColor: "#cceabb",
+                padding: "35px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+            }}>
+                <h2>Find celebrity descendants</h2>
+                <Form className="mt-2" inline onSubmit={handleSubmit}>
+                    <FormControl type="text" value={input} placeholder="Search" onChange={(e) => setInput(e.target.value)} className="mr-sm-2" />
+                    <Button type="submit" variant="dark">Search</Button>
+                </Form>
+            </div>
+            <Container fluid style={{
+                flexGrow: 1,
+                overflow: "auto",
+                minHeight: 1
+            }}>
+                {error ? <span>{error}</span> : null}
+                {shouldDisplayChoice() ? <PersonList onClick={handleChoosePerson} data={personList} /> : null}
+                {shouldDisplayGraph() ?
+                        <div>
+                            <OrgChart tree={data} NodeComponent={MyNodeComponent} />
+                        </div>
+                    : null}
+            </Container>
         </div>
-        <Container fluid>
-            {error ? <span>{error}</span> : null}
-            {shouldDisplayChoice() ? <PersonList onClick={handleChoosePerson} data={personList} /> : null}
-            {shouldDisplayGraph() ?
-                    <ScrollContainer className="scroll-container">
-                        <OrgChart tree={data} NodeComponent={MyNodeComponent} />
-                    </ScrollContainer>
-                : null}
-        </Container>
     </div>
   );
 }
