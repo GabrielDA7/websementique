@@ -1,0 +1,15 @@
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+SELECT
+  ?item ?itemLabel
+  ?value ?valueLabel
+# valueLabel is only useful for properties with item-datatype
+WHERE
+{
+  ?item wdt:P1800 ?value
+  # change P1800 to another property
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
+}
+# remove or change limit for more results
+LIMIT 10

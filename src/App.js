@@ -1,24 +1,27 @@
-import React from 'react';
-import logo from './logo.svg';
+import React, {useState} from 'react';
 import './App.css';
 
 function App() {
+    const [error, setError] = useState(null);
+    const [input, setInput] = useState('');
+
+
+    const handleSubmit = (event) => {
+        event.preventDefault();
+
+    }
+
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
+        Généalogie
       </header>
+        <main>
+            <form onSubmit={handleSubmit}>
+                <input type="text" value={input} onChange={(e) => setInput(e.target.value)}/>
+                <button type="submit">Search</button>
+            </form>
+        </main>
     </div>
   );
 }
