@@ -14,13 +14,13 @@ function App() {
     const [input, setInput] = useState('');
     const [personList, setPersonList] = useState([]);
     const [personChoice, setPersonChoice] = useState({});
-
+    const [data, setData] = useState([]);
 
     const getPersonFromWikidata = (personName) => {
-        const queryPerson = "SELECT ?item ?itemLabel ?image ?gender " +
+        const queryPerson = "SELECT ?item ?itemLabel ?itemDescription ?image ?gender " +
             "WHERE {" +
             "  ?item wdt:P31 wd:Q5." +
-            "  ?item ?label \"" + personName + "\"." +
+            "  ?item ?label \"" + personName + "\"@fr." +
             "  ?item wdt:P18 ?image." +
             "  ?item wdt:P21 ?gender." +
             "  SERVICE wikibase:label { bd:serviceParam wikibase:language \"fr,en\". }" +
@@ -33,75 +33,80 @@ function App() {
                         id: extractIdFromWikidataUrl(res.item.value),
                         image: res.image.value,
                         gender: extractIdFromWikidataUrl(res.gender.value),
-                        name: res.itemLabel.value
+                        name: res.itemLabel.value,
+                        description: res.itemDescription?.value
                     };
                 })
             );
     };
 
-    const getChildren = (parentId) => {
-        const queryChild = "SELECT ?child ?childLabel ?image ?gender " +
-          "WHERE" +
-          "{" +
-          "  wd:" + parentId + " wdt:P40 ?child." +
-          "  OPTIONAL {?child wdt:P18 ?image}." +
-          "  OPTIONAL {?child wdt:P21 ?gender}." +
-          "  SERVICE wikibase:label { bd:serviceParam wikibase:language \"fr,en\". }" +
-          "}";
+    const getTree = (person) => {
+        const query = "SELECT DISTINCT ?item ?depth ?itemLabel ?image ?child ?gender ?deathLocationCoordinates " +
+            "WHERE {" +
+            "  SERVICE gas:service {" +
+            "    gas:program gas:gasClass \"com.bigdata.rdf.graph.analytics.SSSP\" ;" +
+            "                gas:in wd:" + person.id + " ;" +
+            "                gas:traversalDirection \"Forward\" ;" +
+            "                gas:out ?item ;" +
+            "                gas:out1 ?depth ;" +
+            "                gas:maxIterations 2;" +
+            "                gas:linkType wdt:P40 ." +
+            "  }" +
+            "  OPTIONAL { ?item wdt:P40 ?child }" +
+            "  OPTIONAL { ?item wdt:P18 ?image }" +
+            "  OPTIONAL { ?item wdt:P21 ?gender }" +
+            "  OPTIONAL { ?item wdt:P20 ?deathLocation }" +
+            "  OPTIONAL { ?deathLocation wdt:P625 ?deathLocationCoordinates }" +
+            "  SERVICE wikibase:label {bd:serviceParam wikibase:language \"fr,en\" }" +
+            "}" +
+            "ORDER BY ?depth";
 
-        console.log("https://query.wikidata.org/bigdata/namespace/wdq/sparql?format=json&query=" + queryChild);
-        return fetch("https://query.wikidata.org/bigdata/namespace/wdq/sparql?format=json&query=" + queryChild)
+        return fetch("https://query.wikidata.org/bigdata/namespace/wdq/sparql?format=json&query=" + query)
             .then(res => res.json())
             .then(json => json.results.bindings.map(res => {
                     return {
-                        id: extractIdFromWikidataUrl(res.child.value),
+                        id: extractIdFromWikidataUrl(res.item.value),
+                        depth: res.depth?.value | 0,
                         image: res.image?.value,
                         gender: extractIdFromWikidataUrl(res.gender.value),
-                        name: res.childLabel.value
+                        name: res.itemLabel.value,
+                        child: extractIdFromWikidataUrl(res.child?.value),
+                        deathLocation: res.deathLocationCoordinates?.value
                     };
                 })
             );
     };
 
     const extractIdFromWikidataUrl = (url) => {
+        if (url === undefined)
+            return url;
         return url.replace("http://www.wikidata.org/entity/", "");
     };
 
-    const data = {
-        name: "Bill Lumbergh",
-        actor: "Gary Cole",
-        children: [
-            {
-                name: "Peter Gibbons",
-                actor: "Ron Livingston",
-                children: [
-                    {
-                        name: "And More!!",
-                        actor: "This is just to show how to build a complex tree with multiple levels of children. Enjoy!"
-                    }
-                ]
-            },
-            {
-                name: "Milton Waddams",
-                actor: "Stephen Root"
-            },
-            {
-                name: "Bob Slydell",
-                actor: "John C. McGi..."
-            },
-        ]
-    };
-
-    const getTree = async (person) => {
-        const childrenList = await getChildren(person.id);
-        if (childrenList.length === 0)
-            return person;
-        person.children = childrenList.map(child => {
-            return getTree(child);
+    const mergeDuplicate = (tree) => {
+        let mergedPerson = [];
+        tree.forEach(person => {
+            if (mergedPerson.filter(p => p.name === person.name).length > 0)
+                return;
+            let samePerson = tree.filter(p => p.name === person.name);
+            samePerson[0].child = samePerson.map(p => p.child).filter(child => child !== undefined);
+            mergedPerson.push(samePerson[0]);
         });
-        return person;
+        return mergedPerson;
     };
 
+    const formatData = (people) => {
+        let rootPerson = people.filter(person => person.depth === 0);
+        rootPerson = rootPerson[0];
+        getChildren(rootPerson, people);
+        return rootPerson;
+    };
+
+    const getChildren = (person, people) => {
+        let children = people.filter(p => person.child.includes(p.id));
+        children.forEach(child => getChildren(child, people));
+        person.children = children;
+    };
 
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -109,19 +114,21 @@ function App() {
         setPersonList(personList);
     };
 
-    const handleChoosePerson = (person) => {
-        console.log(JSON.stringify(person));
+    const handleChoosePerson = async (person) => {
         setPersonChoice(person);
-        //console.log(getTree(personList[0]));
+        let tree = await getTree(person);
+        let people = mergeDuplicate(tree);
+        let data = formatData(people);
+        setData(data);
     };
 
     const shouldDisplayGraph = () => {
         return Object.entries(personChoice).length > 0;
-    }
+    };
 
     const shouldDisplayChoice = () => {
-        return Object.entries(personChoice).length == 0 && Object.entries(personList).length;
-    }
+        return Object.entries(personChoice).length === 0 && Object.entries(personList).length;
+    };
 
   return (
     <div className="App">
@@ -138,7 +145,7 @@ function App() {
             <h2>Find celebrity descendants</h2>
             <Form className="mt-2" inline onSubmit={handleSubmit}>
                 <FormControl type="text" value={input} placeholder="Search" onChange={(e) => setInput(e.target.value)} className="mr-sm-2" />
-                <Button variant="dark">Search</Button>
+                <Button type="submit" variant="dark">Search</Button>
             </Form>
         </div>
         <Container>
@@ -160,10 +167,7 @@ function PersonList(props) {
                     <Card.Img style={{height: "300px"}} variant="top" src={person.image} />
                     <Card.Body>
                         <Card.Title>{person.name}</Card.Title>
-                        <Card.Text>
-                            Some quick example text to build on the card title and make up the bulk of
-                            the card's content.
-                        </Card.Text>
+                        <Card.Text>{person.description}</Card.Text>
                         <Button variant="dark" onClick={() => onClick(person)}>Select</Button>
                     </Card.Body>
                 </Card>
