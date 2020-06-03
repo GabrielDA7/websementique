@@ -12,6 +12,9 @@ const MyNodeComponent = ({node}) => {
 function App() {
     const [error, setError] = useState(null);
     const [input, setInput] = useState('');
+    const [personList, setPersonList] = useState({});
+
+    const [step, setStep] = useState({choose : false, displayChart: false});
 
     const getPersonFromWikidata = (personName) => {
         const queryPerson = "SELECT ?item ?itemLabel ?image ?gender " +
@@ -23,19 +26,17 @@ function App() {
             "  SERVICE wikibase:label { bd:serviceParam wikibase:language \"fr,en\". }" +
             "}";
 
-        let personList = [];
-        fetch("https://query.wikidata.org/bigdata/namespace/wdq/sparql?format=json&query=" + queryPerson)
+        return fetch("https://query.wikidata.org/bigdata/namespace/wdq/sparql?format=json&query=" + queryPerson)
             .then(res => res.json())
-            .then(json => personList.push(json.results.bindings.map(res => {
+            .then(json => json.results.bindings.map(res => {
                     return {
                         id: extractIdFromWikidataUrl(res.item.value),
                         image: res.image.value,
                         gender: extractIdFromWikidataUrl(res.gender.value),
                         name: res.itemLabel.value
                     };
-                }))
+                })
             );
-        return personList;
     };
 
     const extractIdFromWikidataUrl = (url) => {
@@ -68,11 +69,15 @@ function App() {
     };
 
 
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault();
-        let personList = getPersonFromWikidata(input);
-
+        let personList = await getPersonFromWikidata(input);
+        console.log(JSON.stringify(personList));
     };
+
+    const handleChoosePerson = (person) => {
+        console.log(JSON.stringify(person));
+    }
 
   return (
     <div className="App">
@@ -84,10 +89,32 @@ function App() {
                 <input type="text" value={input} onChange={(e) => setInput(e.target.value)}/>
                 <button type="submit">Search</button>
             </form>
-            <OrgChart tree={data} NodeComponent={MyNodeComponent} />
+            {step.choose ? <PersonList onClick={handleChoosePerson} data={personList} /> : null}
+            {step.displayChart ? <OrgChart tree={data} NodeComponent={MyNodeComponent} /> : null}
         </main>
     </div>
   );
+}
+
+function PersonList(props) {
+    const {data, onClick} = props;
+
+    return (
+        data.each(person => {
+            return (
+                <a href="#" onClick={() => onClick(person)}>
+                  <div className="person-card">
+                      <div className="row">
+                          <img src={person.image}/>
+                      </div>
+                      <div className="row">
+                          {person.name}
+                      </div>
+                  </div>
+                </a>
+            );
+        })
+    )
 }
 
 export default App;
