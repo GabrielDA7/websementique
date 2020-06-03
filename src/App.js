@@ -39,6 +39,30 @@ function App() {
             );
     };
 
+    const getChildren = (parentId) => {
+        const queryChild = "SELECT ?child ?childLabel ?image ?gender " +
+          "WHERE" +
+          "{" +
+          "  wd:" + parentId + " wdt:P40 ?child." +
+          "  OPTIONAL {?child wdt:P18 ?image}." +
+          "  OPTIONAL {?child wdt:P21 ?gender}." +
+          "  SERVICE wikibase:label { bd:serviceParam wikibase:language \"fr,en\". }" +
+          "}";
+
+        console.log("https://query.wikidata.org/bigdata/namespace/wdq/sparql?format=json&query=" + queryChild);
+        return fetch("https://query.wikidata.org/bigdata/namespace/wdq/sparql?format=json&query=" + queryChild)
+            .then(res => res.json())
+            .then(json => json.results.bindings.map(res => {
+                    return {
+                        id: extractIdFromWikidataUrl(res.child.value),
+                        image: res.image.value,
+                        gender: extractIdFromWikidataUrl(res.gender.value),
+                        name: res.childLabel.value
+                    };
+                })
+            );
+    };
+
     const extractIdFromWikidataUrl = (url) => {
         return url.replace("http://www.wikidata.org/entity/", "");
     };
@@ -68,16 +92,27 @@ function App() {
         ]
     };
 
+    const getTree = async (person) => {
+        const childrenList = await getChildren(person.id);
+        if (childrenList.length === 0)
+            return person;
+        person.children = childrenList.map(child => {
+            return getTree(child);
+        });
+        return person;
+    };
+
 
     const handleSubmit = async (event) => {
         event.preventDefault();
         let personList = await getPersonFromWikidata(input);
         console.log(JSON.stringify(personList));
+        console.log(getTree(personList[0]));
     };
 
     const handleChoosePerson = (person) => {
         console.log(JSON.stringify(person));
-    }
+    };
 
   return (
     <div className="App">
