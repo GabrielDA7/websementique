@@ -3,6 +3,7 @@ import OrgChart from 'react-orgchart';
 import 'react-orgchart/index.css';
 import './App.css';
 import {Button, Card, Col, Container, Form, FormControl, Navbar, Row} from "react-bootstrap";
+import ScrollContainer from 'react-indiana-drag-scroll';
 
 const MyNodeComponent = ({node}) => {
     return (
@@ -12,8 +13,8 @@ const MyNodeComponent = ({node}) => {
 
 function App() {
     const [input, setInput] = useState('');
+    const [error, setError] = useState();
     const [personList, setPersonList] = useState([]);
-    const [personChoice, setPersonChoice] = useState({});
     const [data, setData] = useState([]);
 
     const getPersonFromWikidata = (personName) => {
@@ -113,11 +114,14 @@ function App() {
     const handleSubmit = async (event) => {
         event.preventDefault();
         let personList = await getPersonFromWikidata(input);
-        setPersonList(personList);
+        if(personList.length <= 0) {
+            setError('Not found');
+        } else {
+            setPersonList(personList);
+        }
     };
 
     const handleChoosePerson = async (person) => {
-        setPersonChoice(person);
         let tree = await getTree(person);
         let people = mergeDuplicate(tree);
         let data = formatData(people);
@@ -125,11 +129,11 @@ function App() {
     };
 
     const shouldDisplayGraph = () => {
-        return Object.entries(personChoice).length > 0;
+        return Object.entries(data).length > 0;
     };
 
     const shouldDisplayChoice = () => {
-        return Object.entries(personChoice).length === 0 && Object.entries(personList).length;
+        return Object.entries(data).length === 0 && Object.entries(personList).length;
     };
 
   return (
@@ -150,9 +154,14 @@ function App() {
                 <Button type="submit" variant="dark">Search</Button>
             </Form>
         </div>
-        <Container>
+        <Container fluid>
+            {error ? <span>{error}</span> : null}
             {shouldDisplayChoice() ? <PersonList onClick={handleChoosePerson} data={personList} /> : null}
-            {shouldDisplayGraph() ? <OrgChart tree={data} NodeComponent={MyNodeComponent} /> : null}
+            {shouldDisplayGraph() ?
+                    <ScrollContainer className="scroll-container">
+                        <OrgChart tree={data} NodeComponent={MyNodeComponent} />
+                    </ScrollContainer>
+                : null}
         </Container>
     </div>
   );
