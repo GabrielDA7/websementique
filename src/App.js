@@ -25,8 +25,14 @@ const MyNodeComponent = ({node}) => {
 };
 
 function App() {
-    const [personList, setPersonList] = useState([]);
-    const [data, setData] = useState([]);
+    const [data, setData] = useState({
+        chart: [],
+        step: {
+            choicePerson: false,
+            displayChart: false
+        },
+        personList: []
+    });
 
     const MemoizedPersonList = React.memo(PersonList);
     const MemoizedOrgchart = React.memo(OrgChart);
@@ -72,22 +78,22 @@ function App() {
     };
 
     const handleSubmit = async (personList) => {
-        setPersonList(personList);
+        setData({personList: personList, step: {choicePerson: true, displayChart: false}});
     };
 
     const handleChoosePerson = async (person) => {
         let tree = await getTree(person);
         let people = mergeDuplicate(tree);
         let data = formatData(people);
-        setData(data);
+        setData({data: data, step: {choicePerson: false, displayChart: true}});
     };
 
     const shouldDisplayGraph = () => {
-        return Object.entries(data).length > 0;
+        return data.step.displayChart;
     };
 
     const shouldDisplayChoice = () => {
-        return Object.entries(data).length === 0 && Object.entries(personList).length;
+        return data.step.choicePerson;
     };
 
     return (
@@ -125,10 +131,10 @@ function App() {
                         overflow: "auto",
                         minHeight: 1
                     }}>
-                        {shouldDisplayChoice() ? <MemoizedPersonList onClick={handleChoosePerson} data={personList} />  : null}
+                        {shouldDisplayChoice() ? <MemoizedPersonList onClick={handleChoosePerson} data={data.personList} />  : null}
                         {shouldDisplayGraph() ?
                             <div>
-                                <MemoizedOrgchart tree={data} NodeComponent={MyNodeComponent} />
+                                <MemoizedOrgchart tree={data.data} NodeComponent={MyNodeComponent} />
                                 <ModalNode />
                             </div>
                             : null}
