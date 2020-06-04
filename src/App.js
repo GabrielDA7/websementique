@@ -2,12 +2,23 @@ import React, {useState} from 'react';
 import OrgChart from 'react-orgchart';
 import 'react-orgchart/index.css';
 import './App.css';
-import {Button, Card, Col, Container, Form, FormControl, Navbar, Row} from "react-bootstrap";
-import ScrollContainer from 'react-indiana-drag-scroll';
+import NoImage from './assets/no-image.jpg';
+import {Button, Card, Col, Container, Form, FormControl, Image, ListGroup, Modal, Navbar, Row} from "react-bootstrap";
+import {ModalProvider, useModal} from "./context/ModalContext";
+
+const MaleId = "Q6581097";
 
 const MyNodeComponent = ({node}) => {
+    const { showModal } = useModal();
+    const sexeClass = node.gender === MaleId ? "male-node" : "female-node";
+
     return (
-        <div className="initechNode">{ node.name }</div>
+        <div className="inittechNode" onClick={() => showModal(node)}>
+            <span className={sexeClass}>
+                { node.name }
+            </span>
+        </div>
+
     );
 };
 
@@ -136,54 +147,92 @@ function App() {
         return Object.entries(data).length === 0 && Object.entries(personList).length;
     };
 
-  return (
-    <div className="App" style={{
-        position: "absolute",
-        top: 0,
-        bottom: 0,
-        left: 0,
-        right: 0,
-        display: "flex",
-        flexDirection: "column"
-    }}>
-        <div style={{
-            flexGrow: 1,
-            display: "flex",
-            flexDirection: "column",
-            minHeight: 0
-        }}>
-            <Navbar style={{backgroundColor: "#3f3f44"}} expand="lg">
-                <Navbar.Brand style={{color: "#ffffff"}}>Généalogie</Navbar.Brand>
-            </Navbar>
-            <div style={{
-                backgroundColor: "#cceabb",
-                padding: "35px",
+    return (
+        <ModalProvider>
+            <div className="App" style={{
+                position: "absolute",
+                top: 0,
+                bottom: 0,
+                left: 0,
+                right: 0,
                 display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
+                flexDirection: "column"
             }}>
-                <h2>Find celebrity descendants</h2>
-                <Form className="mt-2" inline onSubmit={handleSubmit}>
-                    <FormControl type="text" value={input} placeholder="Search" onChange={(e) => setInput(e.target.value)} className="mr-sm-2" />
-                    <Button type="submit" variant="dark">Search</Button>
-                </Form>
+                <div style={{
+                    flexGrow: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    minHeight: 0
+                }}>
+                    <Navbar style={{backgroundColor: "#3f3f44"}} expand="lg">
+                        <Navbar.Brand style={{color: "#ffffff"}}>Généalogie</Navbar.Brand>
+                    </Navbar>
+                    <div style={{
+                        backgroundColor: "#cceabb",
+                        padding: "35px",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                    }}>
+                        <h2>Find celebrity descendants</h2>
+                        <Form className="mt-2" inline onSubmit={handleSubmit}>
+                            <FormControl type="text" value={input} placeholder="Search" onChange={(e) => setInput(e.target.value)} className="mr-sm-2" />
+                            <Button type="submit" variant="dark">Search</Button>
+                        </Form>
+                    </div>
+                    <Container fluid style={{
+                        flexGrow: 1,
+                        overflow: "auto",
+                        minHeight: 1
+                    }}>
+                        {error ? <span>{error}</span> : null}
+                        {shouldDisplayChoice() ? <PersonList onClick={handleChoosePerson} data={personList} /> : null}
+                        {shouldDisplayGraph() ?
+                            <div>
+                                <OrgChart tree={data} NodeComponent={MyNodeComponent} />
+                                <ModalNode />
+                            </div>
+                            : null}
+                    </Container>
+                </div>
             </div>
-            <Container fluid style={{
-                flexGrow: 1,
-                overflow: "auto",
-                minHeight: 1
-            }}>
-                {error ? <span>{error}</span> : null}
-                {shouldDisplayChoice() ? <PersonList onClick={handleChoosePerson} data={personList} /> : null}
-                {shouldDisplayGraph() ?
-                        <div>
-                            <OrgChart tree={data} NodeComponent={MyNodeComponent} />
-                        </div>
-                    : null}
-            </Container>
-        </div>
-    </div>
-  );
+        </ModalProvider>
+    );
+}
+
+function ModalNode() {
+    const {data, closeModal} = useModal();
+
+    function getDeathPositionUrlMap(deathPosition) {
+        let str = deathPosition.replace('Point(', '');
+        str = str.replace(')', '');
+        const positionArray = str.split(' ');
+        return `https://www.google.com/maps/search/?api=1&query=${positionArray[1]},${positionArray[0]}`;
+    }
+
+    return (
+        <Modal show={data.show} onHide={closeModal}>
+            <Modal.Header closeButton>
+                <Modal.Title>{data.node.name}</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <Row style={{justifyContent: "center"}}>
+                    <Image style={{height: "300px"}} src={data.node.image ? data.node.image : NoImage} rounded />
+                </Row>
+                <Row style={{justifyContent: "center"}}>
+                    <ListGroup>
+                        <ListGroup.Item>Genre : {data.node.gender === MaleId ? "Homme" : "Femme"}</ListGroup.Item>
+                        {data.node.deathLocation ? <ListGroup.Item>Position de sa mort : <a href={getDeathPositionUrlMap(data.node.deathLocation)}>{data.node.deathLocation}</a></ListGroup.Item> : null}
+                    </ListGroup>
+                </Row>
+            </Modal.Body>
+            <Modal.Footer>
+                <Button variant="dark" onClick={closeModal}>
+                    Close
+                </Button>
+            </Modal.Footer>
+        </Modal>
+    )
 }
 
 function PersonList(props) {
@@ -191,18 +240,18 @@ function PersonList(props) {
 
     return (
         <Row className="pt-2">
-        {data.map((person, index) =>
-            <Col xs lg="4" key={index}>
-                <Card style={{ width: '18rem' }}>
-                    <Card.Img style={{height: "300px"}} variant="top" src={person.image} />
-                    <Card.Body>
-                        <Card.Title>{person.name}</Card.Title>
-                        <Card.Text>{person.description}</Card.Text>
-                        <Button variant="dark" onClick={() => onClick(person)}>Select</Button>
-                    </Card.Body>
-                </Card>
-            </Col>
-        )}
+            {data.map((person, index) =>
+                <Col xs lg="4" key={index}>
+                    <Card style={{ width: '18rem' }}>
+                        <Card.Img style={{height: "300px"}} variant="top" src={person.image} />
+                        <Card.Body>
+                            <Card.Title>{person.name}</Card.Title>
+                            <Card.Text>{person.description}</Card.Text>
+                            <Button variant="dark" onClick={() => onClick(person)}>Select</Button>
+                        </Card.Body>
+                    </Card>
+                </Col>
+            )}
         </Row>
     )
 }
