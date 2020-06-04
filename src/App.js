@@ -68,7 +68,7 @@ function App() {
                         id: extractIdFromWikidataUrl(res.item.value),
                         depth: res.depth?.value | 0,
                         image: res.image?.value,
-                        gender: extractIdFromWikidataUrl(res.gender.value),
+                        gender: extractIdFromWikidataUrl(res.gender?.value),
                         name: res.itemLabel.value,
                         child: extractIdFromWikidataUrl(res.child?.value),
                         deathLocation: res.deathLocationCoordinates?.value
