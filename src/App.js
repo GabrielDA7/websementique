@@ -5,6 +5,8 @@ import './App.css';
 import NoImage from './assets/no-image.jpg';
 import {Button, Card, Col, Container, Form, FormControl, Image, ListGroup, Modal, Navbar, Row} from "react-bootstrap";
 import {ModalProvider, useModal} from "./context/ModalContext";
+import SearchForm from "./form/SearchForm";
+import {extractIdFromWikidataUrl, formatData, mergeDuplicate} from "./lib/lib";
 
 const MaleId = "Q6581097";
 
@@ -23,33 +25,12 @@ const MyNodeComponent = ({node}) => {
 };
 
 function App() {
-    const [input, setInput] = useState('');
     const [personList, setPersonList] = useState([]);
     const [data, setData] = useState([]);
 
-    const getPersonFromWikidata = (personName) => {
-        const queryPerson = "SELECT ?item ?itemLabel ?itemDescription ?image ?gender " +
-            "WHERE {" +
-            "  ?item wdt:P31 wd:Q5." +
-            "  ?item ?label \"" + personName + "\"@fr." +
-            "  ?item wdt:P18 ?image." +
-            "  ?item wdt:P21 ?gender." +
-            "  SERVICE wikibase:label { bd:serviceParam wikibase:language \"fr,en\". }" +
-            "}";
+    const MemoizedPersonList = React.memo(PersonList);
+    const MemoizedOrgchart = React.memo(OrgChart);
 
-        return fetch("https://query.wikidata.org/bigdata/namespace/wdq/sparql?format=json&query=" + queryPerson)
-            .then(res => res.json())
-            .then(json => json.results.bindings.map(res => {
-                    return {
-                        id: extractIdFromWikidataUrl(res.item.value),
-                        image: res.image.value,
-                        gender: extractIdFromWikidataUrl(res.gender.value),
-                        name: res.itemLabel.value,
-                        description: res.itemDescription?.value
-                    };
-                })
-            );
-    };
 
     const getTree = (person) => {
         const query = "SELECT DISTINCT ?item ?depth ?itemLabel ?image ?child ?gender ?deathLocationCoordinates " +
@@ -90,40 +71,7 @@ function App() {
             );
     };
 
-    const extractIdFromWikidataUrl = (url) => {
-        if (url === undefined)
-            return url;
-        return url.replace("http://www.wikidata.org/entity/", "");
-    };
-
-    const mergeDuplicate = (tree) => {
-        let mergedPerson = [];
-        tree.forEach(person => {
-            if (mergedPerson.filter(p => p.name === person.name).length > 0)
-                return;
-            let samePerson = tree.filter(p => p.name === person.name);
-            samePerson[0].child = samePerson.map(p => p.child).filter(child => child !== undefined);
-            mergedPerson.push(samePerson[0]);
-        });
-        return mergedPerson;
-    };
-
-    const formatData = (people) => {
-        let rootPerson = people.filter(person => person.depth === 0);
-        rootPerson = rootPerson[0];
-        getChildren(rootPerson, people);
-        return rootPerson;
-    };
-
-    const getChildren = (person, people) => {
-        let children = people.filter(p => person.child.includes(p.id));
-        children.forEach(child => getChildren(child, people));
-        person.children = children;
-    };
-
-    const handleSubmit = async (event) => {
-        event.preventDefault();
-        let personList = await getPersonFromWikidata(input);
+    const handleSubmit = async (personList) => {
         setPersonList(personList);
     };
 
@@ -170,20 +118,17 @@ function App() {
                         alignItems: "center",
                     }}>
                         <h2>Find celebrity descendants</h2>
-                        <Form className="mt-2" inline onSubmit={handleSubmit}>
-                            <FormControl type="text" value={input} placeholder="Search" onChange={(e) => setInput(e.target.value)} className="mr-sm-2" />
-                            <Button type="submit" variant="dark">Search</Button>
-                        </Form>
+                        <SearchForm onSubmit={handleSubmit} />
                     </div>
                     <Container fluid style={{
                         flexGrow: 1,
                         overflow: "auto",
                         minHeight: 1
                     }}>
-                        {shouldDisplayChoice() ? <PersonList onClick={handleChoosePerson} data={personList} />  : null}
+                        {shouldDisplayChoice() ? <MemoizedPersonList onClick={handleChoosePerson} data={personList} />  : null}
                         {shouldDisplayGraph() ?
                             <div>
-                                <OrgChart tree={data} NodeComponent={MyNodeComponent} />
+                                <MemoizedOrgchart tree={data} NodeComponent={MyNodeComponent} />
                                 <ModalNode />
                             </div>
                             : null}
