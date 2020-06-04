@@ -184,9 +184,12 @@ function PersonList(props) {
     const {data, onClick} = props;
 
     return (
-        <Row className="pt-2">
-            {data.map((person, index) =>
-                <Col xs lg="4" key={index}>
+        <Row className="pt-2" style={{justifyContent: "center"}}>
+            {data.length > 0 ? data.map((person, index) =>
+                <Col xs lg="4" key={index} style={{
+                    display: "flex",
+                    justifyContent: "center"
+                }}>
                     <Card style={{ width: '18rem' }}>
                         <Card.Img style={{height: "300px"}} variant="top" src={person.image} />
                         <Card.Body>
@@ -196,7 +199,7 @@ function PersonList(props) {
                         </Card.Body>
                     </Card>
                 </Col>
-            )}
+            ) : <span>Not Found</span>}
         </Row>
     )
 }
