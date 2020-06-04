@@ -24,7 +24,6 @@ const MyNodeComponent = ({node}) => {
 
 function App() {
     const [input, setInput] = useState('');
-    const [error, setError] = useState();
     const [personList, setPersonList] = useState([]);
     const [data, setData] = useState([]);
 
@@ -125,11 +124,7 @@ function App() {
     const handleSubmit = async (event) => {
         event.preventDefault();
         let personList = await getPersonFromWikidata(input);
-        if(personList.length <= 0) {
-            setError('Not found');
-        } else {
-            setPersonList(personList);
-        }
+        setPersonList(personList);
     };
 
     const handleChoosePerson = async (person) => {
@@ -185,8 +180,7 @@ function App() {
                         overflow: "auto",
                         minHeight: 1
                     }}>
-                        {error ? <span>{error}</span> : null}
-                        {shouldDisplayChoice() ? <PersonList onClick={handleChoosePerson} data={personList} /> : null}
+                        {shouldDisplayChoice() ? <PersonList onClick={handleChoosePerson} data={personList} />  : null}
                         {shouldDisplayGraph() ?
                             <div>
                                 <OrgChart tree={data} NodeComponent={MyNodeComponent} />
