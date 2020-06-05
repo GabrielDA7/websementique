@@ -3,7 +3,20 @@ import OrgChart from 'react-orgchart';
 import 'react-orgchart/index.css';
 import './App.css';
 import NoImage from './assets/no-image.jpg';
-import {Button, Card, Col, Container, Form, FormControl, Image, ListGroup, Modal, Navbar, Row} from "react-bootstrap";
+import {
+    Button,
+    Card,
+    Col,
+    Container,
+    Form,
+    FormControl,
+    FormLabel,
+    Image,
+    ListGroup,
+    Modal,
+    Navbar,
+    Row
+} from "react-bootstrap";
 import {ModalProvider, useModal} from "./context/ModalContext";
 import SearchForm from "./form/SearchForm";
 import {extractIdFromWikidataUrl, formatData, mergeDuplicate} from "./lib/lib";
@@ -31,7 +44,8 @@ function App() {
             choicePerson: false,
             displayChart: false
         },
-        personList: []
+        personList: [],
+        user: {name: undefined}
     });
 
     const MemoizedPersonList = React.memo(PersonList);
@@ -81,7 +95,15 @@ function App() {
         setData({personList: personList, step: {choicePerson: true, displayChart: false}});
     };
 
+    const incrementGraphUserViewCount = async () => {
+        fetch(' https://sandbox.bordercloud.com/sparql', {method:'GET',
+            headers: {'Authorization': 'Basic ' + btoa('ESGI-WEB-2020:ESGI-WEB-2020-heUq9f')}})
+            .then(response => response.json())
+            .then(json => console.log(json));
+    }
+
     const handleChoosePerson = async (person) => {
+        await incrementGraphUserViewCount();
         let tree = await getTree(person);
         let people = mergeDuplicate(tree);
         let data = formatData(people);
@@ -95,6 +117,7 @@ function App() {
     const shouldDisplayChoice = () => {
         return data.step.choicePerson;
     };
+
 
     return (
         <ModalProvider>
@@ -145,6 +168,8 @@ function App() {
     );
 }
 
+
+
 function ModalNode() {
     const {data, closeModal} = useModal();
 
@@ -188,7 +213,8 @@ function PersonList(props) {
             {data.length > 0 ? data.map((person, index) =>
                 <Col xs lg="4" key={index} style={{
                     display: "flex",
-                    justifyContent: "center"
+                    justifyContent: "center",
+                    marginTop: "30px"
                 }}>
                     <Card style={{ width: '18rem' }}>
                         <Card.Img style={{height: "300px"}} variant="top" src={person.image} />

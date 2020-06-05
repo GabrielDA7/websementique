@@ -7,15 +7,21 @@ function SearchForm(props) {
     const [input, setInput] = useState('');
 
     const getPersonFromWikidata = (personName) => {
-        const queryPerson = "SELECT ?item ?itemLabel ?itemDescription ?image ?gender " +
-            "WHERE {" +
-            "  ?item wdt:P31 wd:Q5." +
-            "  ?item ?label \"" + personName + "\"@fr." +
-            "  ?item wdt:P18 ?image." +
-            "  ?item wdt:P21 ?gender." +
-            "  SERVICE wikibase:label { bd:serviceParam wikibase:language \"fr,en\". }" +
-            "}";
-
+        const queryPerson = "SELECT ?item ?itemLabel ?itemDescription ?image ?gender WHERE {" +
+            "                                SERVICE wikibase:mwapi" +
+            "                                {" +
+            "                                    bd:serviceParam wikibase:endpoint 'www.wikidata.org';" +
+            "                                    wikibase:api 'EntitySearch';" +
+            "                                    mwapi:search '"+ personName +"';" +
+            "                                    mwapi:language 'en'." +
+            "                                    ?item wikibase:apiOutputItem mwapi:item." +
+            "                                    ?num wikibase:apiOrdinal true." +
+            "                                }" +
+            "                                    ?item wdt:P31 wd:Q5." +
+            "                                    ?item wdt:P21 ?gender." +
+            "                                    ?item wdt:P18 ?image." +
+            "                                    SERVICE wikibase:label { bd:serviceParam wikibase:language 'en'. }" +
+            "                            }";
         return fetch("https://query.wikidata.org/bigdata/namespace/wdq/sparql?format=json&query=" + queryPerson)
             .then(res => res.json())
             .then(json => json.results.bindings.map(res => {
