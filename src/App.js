@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import OrgChart from 'react-orgchart';
 import 'react-orgchart/index.css';
 import './App.css';
@@ -8,9 +8,6 @@ import {
     Card,
     Col,
     Container,
-    Form,
-    FormControl,
-    FormLabel,
     Image,
     ListGroup,
     Modal,
@@ -20,6 +17,7 @@ import {
 import {ModalProvider, useModal} from "./context/ModalContext";
 import SearchForm from "./form/SearchForm";
 import {extractIdFromWikidataUrl, formatData, mergeDuplicate} from "./lib/lib";
+import TopSearch from "./component/TopSearch";
 
 const MaleId = "Q6581097";
 
@@ -95,15 +93,24 @@ function App() {
         setData({personList: personList, step: {choicePerson: true, displayChart: false}});
     };
 
-    const incrementGraphUserViewCount = async () => {
-        fetch(' https://sandbox.bordercloud.com/sparql', {method:'GET',
-            headers: {'Authorization': 'Basic ' + btoa('ESGI-WEB-2020:ESGI-WEB-2020-heUq9f')}})
+    const addViewIp = async (person) => {
+        await fetch(' https://websementique-server.herokuapp.com/search-person', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                id: person.id,
+                personName: person.name
+            })
+        })
             .then(response => response.json())
-            .then(json => console.log(json));
+            .catch(err => console.log(err));
     }
 
     const handleChoosePerson = async (person) => {
-        await incrementGraphUserViewCount();
+        await addViewIp(person);
         let tree = await getTree(person);
         let people = mergeDuplicate(tree);
         let data = formatData(people);
@@ -138,6 +145,7 @@ function App() {
                 }}>
                     <Navbar style={{backgroundColor: "#3f3f44"}} expand="lg">
                         <Navbar.Brand style={{color: "#ffffff"}}>Généalogie</Navbar.Brand>
+                        <SearchForm onSubmit={handleSubmit} />
                     </Navbar>
                     <div style={{
                         backgroundColor: "#cceabb",
@@ -146,8 +154,7 @@ function App() {
                         flexDirection: "column",
                         alignItems: "center",
                     }}>
-                        <h2>Find celebrity descendants</h2>
-                        <SearchForm onSubmit={handleSubmit} />
+                        <TopSearch />
                     </div>
                     <Container fluid style={{
                         flexGrow: 1,

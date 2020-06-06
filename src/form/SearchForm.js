@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {Button, Form, FormControl} from "react-bootstrap";
+import {Button, Form, FormControl, Row, Table} from "react-bootstrap";
 import {extractIdFromWikidataUrl} from "../lib/lib";
 
 function SearchForm(props) {
@@ -43,9 +43,9 @@ function SearchForm(props) {
     }
 
     return (
-        <Form className="mt-2" inline onSubmit={handleSubmit}>
+        <Form className="mt-2" style={{marginLeft: "auto"}} inline onSubmit={handleSubmit}>
             <FormControl type="text" value={input} placeholder="Search" onChange={(e) => setInput(e.target.value)} className="mr-sm-2" />
-            <Button type="submit" variant="dark">Search</Button>
+            <Button type="submit" style={{backgroundColor: "rgb(204, 234, 187)", borderColor: "rgb(204, 234, 187)", color: "rgb(63, 63, 68"}}>Search</Button>
         </Form>
     )
 }

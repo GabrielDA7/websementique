@@ -8,6 +8,10 @@
   }
 }
 
+#top-search .table th, #top-search .table thead th, #top-search .table td {
+  border: none !important;
+}
+
 .App-header {
   background-color: #282c34;
   display: flex;
