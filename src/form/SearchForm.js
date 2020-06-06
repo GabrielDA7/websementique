@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {Button, Form, FormControl, Row, Table} from "react-bootstrap";
+import {Button, Form, FormControl} from "react-bootstrap";
 import {extractIdFromWikidataUrl} from "../lib/lib";
 
 function SearchForm(props) {

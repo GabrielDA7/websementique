@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import OrgChart from 'react-orgchart';
 import 'react-orgchart/index.css';
 import './App.css';
@@ -93,8 +93,8 @@ function App() {
         setData({personList: personList, step: {choicePerson: true, displayChart: false}});
     };
 
-    const addViewIp = async (person) => {
-        await fetch(' https://websementique-server.herokuapp.com/search-person', {
+    const addViewIp = (person) => {
+        fetch(' https://websementique-server.herokuapp.com/search-person', {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
